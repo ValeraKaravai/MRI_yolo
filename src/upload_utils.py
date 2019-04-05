@@ -1,8 +1,11 @@
 import os
 import sys
 import logging
+import requests
 import xmltodict
 import pandas as pd
+from tqdm import tqdm
+from zipfile import ZipFile
 
 import constants as const
 
@@ -105,6 +108,7 @@ def parse_xml(df):
 
 
 def parse_type_disk(type_disk_mri):
+
     '''
 
     :param type_disk_mri: raw string with type of disk (mri)
@@ -165,3 +169,60 @@ def preproc_data(df, columns):
     logging.info('Category {}'.format(cat_name_dict))
     logging.info('Filter by columns: {}'.format(', '.join(columns)))
     return df_filter[columns], cat_name_dict
+
+
+def download_file_from_google_drive(id, destination):
+
+    url = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(url, params={'id': id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {'id': id, 'confirm': token}
+        response = session.get(url, params=params, stream=True)
+    logging.info('response = {}'.format(response))
+    save_response_content(response, destination)
+
+
+def get_confirm_token(response):
+
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+
+    return None
+
+
+def save_response_content(response, destination):
+
+    chunk_size = 32768
+
+    total_size = int(response.headers.get('content-length', 0))
+
+    logging.info('Start download file, size = {}'.format(total_size))
+
+    with tqdm(desc=destination, total=total_size, unit='B', unit_scale=True) as pbar:
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(chunk_size):
+                if chunk:
+                    pbar.update(chunk_size)
+                    f.write(chunk)
+    # logging.info('Successfully downloaded')
+
+
+def unzip_data(zip_file):
+
+    '''
+
+    :param zip_file: name of zip file from google drive
+    :type zip_file: str
+    :return:
+    '''
+
+    logging.info('Unzip = {}'.format(zip_file))
+    with ZipFile(zip_file, 'r') as zipObj:
+        zipObj.extractall()
+    logging.info('Successfully unzip')

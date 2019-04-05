@@ -57,7 +57,6 @@ lib.network_height.restype = c_int
 
 predict = lib.network_predict
 predict.argtypes = [c_void_p, POINTER(c_float)]
-predict.restype = POINTER(c_float)
 
 set_gpu = lib.cuda_set_device
 set_gpu.argtypes = [c_int]
@@ -171,13 +170,15 @@ def load_data(cfg, weights, data):
     '''
 
     :param cfg: configuration of network
-    :type cfg: path to cfg file
+    :type cfg: str
     :param weights: weight of network
-    :type cfg: path to weight file
+    :type weights: str
     :param data: data of yolo form for data
-    :type data: path to data file
+    :type data: str
     :return: net and meta data (format for yola detection )
+
     '''
+
     logging.info('Encode to ascii')
     cfg = cfg.encode('ascii')
     weights = weights.encode('ascii')

@@ -5,24 +5,27 @@ import logging
 ROOT = os.getcwd()
 sys.path.append(ROOT)
 
-DIR_FILES = 'data/descr/'
-DIR_IMG = 'data/images/'
+DATA_ZIP = 'data.zip'
+DIR_DATA = 'data/'
+DIR_FILES = 'descr/'
+DIR_IMG = 'images/'
 DIR_DARKNET = 'darknet/'
 
-PATH_FILES = os.path.join(ROOT, DIR_FILES)
-PATH_IMG = os.path.join(ROOT, DIR_IMG)
+PATH_DATA = os.path.join(ROOT, DIR_DATA)
+PATH_IMG = os.path.join(PATH_DATA, DIR_IMG)
+PATH_FILES = os.path.join(PATH_DATA, DIR_FILES)
 PATH_DARKNET = os.path.join(ROOT, DIR_DARKNET)
 
 CFG_YOLO = os.path.join(PATH_DARKNET, 'cfg/yolo.cfg')
 DATA_YOLO = os.path.join(PATH_DARKNET, 'data/obj.data')
 WEIGHT_YOLO = os.path.join(PATH_DARKNET, 'backup/yolo.weights')
-pic = os.path.join(ROOT, 'data/img_00122.jpg')
 
+FILE_ID = '1nlLFYX_Wbcj3IIf1uhtb64Xr1elhsYWj'
 IMG_SIZE = 384
 
-
 COLUMNS = ['id', 'label', 'file', 'type_disk',
-           'height', 'width', 'x', 'y', 'x_center', 'y_center']
+           'height', 'width',
+           'x', 'y', 'x_center', 'y_center']
 
 COLUMNS_YOLO = ['label', 'x_center',
                 'y_center', 'width', 'height']
