@@ -53,10 +53,13 @@ def draw_img(df, img_name, types_df, dir_img, color_patch, figsize):
         ax = [ax]
     for i in range(num_subplots):
         ax[i].imshow(im_np)
-
-        rect = df[i][df[i]['file'] == img_name].apply(draw_polygon,
-                                                      color_patch=color_patch,
-                                                      axis=1)
+        
+        subset_df = df[i][df[i]['file'] == img_name]
+        if subset_df.shape[0] == 0:
+            continue
+        rect = subset_df.apply(draw_polygon, 
+                               color_patch=color_patch,
+                               axis=1)
         for j in rect:
             ax[i].add_patch(j[1])
 

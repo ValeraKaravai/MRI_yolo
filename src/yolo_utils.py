@@ -151,11 +151,14 @@ def detect(net, meta, image, thresh=.1, hier_thresh=.5, nms=.45):
 
 
 def detect_df(net, meta, img, columns, cat_label, threshold=.2):
-    detect_list = detect(net=net,
+    detect_list = yolo_utils.detect(net=net,
                          meta=meta,
                          image=('data/obj/' + img).encode('ascii'),
                          thresh=threshold)
     results = pd.DataFrame(detect_list)
+    if results.shape[0] == 0:
+        return pd.DataFrame(columns=columns)
+    
     results = results.drop(1, axis=1)
     results.columns = columns
     results['x'] = results['x_center'] - results['width'] / 2
