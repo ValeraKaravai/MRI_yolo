@@ -4,6 +4,7 @@ import logging
 import requests
 import xmltodict
 import pandas as pd
+import shutil
 from tqdm import tqdm
 from zipfile import ZipFile
 
@@ -102,7 +103,8 @@ def parse_xml(df):
         list_df_parse.append(tmp_df)
 
     df_parse = pd.concat(list_df_parse,
-                         ignore_index=True)
+                         ignore_index=True,
+                         sort=False)
 
     return df_parse.drop(['polygon'], axis=1)
 
@@ -136,11 +138,15 @@ def cat_label(str_label):
            cat_name_dict
 
 
-def preproc_data(df, columns):
+def preproc_data(df, columns_out, type_disk):
     '''
 
     :param df: data frame for preprocessing (filter of data)
     :type df: DataFrame
+    :param columns_out: columns in output df
+    :type columns_out: list
+    :param type_disk: Dictionary with rename category of disk
+    :type type_disk: dict
     :return: data frame with categorical variable (label) and without uninformation columns
 
     '''
@@ -159,6 +165,7 @@ def preproc_data(df, columns):
 
     logging.info('Adding column type of disk')
     df_filter['type_disk'] = parse_type_disk(type_disk_mri=df_filter.name)
+    df_filter['type_disk'] = df_filter['type_disk'].map(type_disk)
 
     logging.info('Adding column label (category)')
     df_filter['label'], cat_name_dict = cat_label(str_label=df_filter.type_disk)
@@ -167,8 +174,8 @@ def preproc_data(df, columns):
 
     logging.info('Filtering data, shape before = {}'.format(df_filter.shape))
     logging.info('Category {}'.format(cat_name_dict))
-    logging.info('Filter by columns: {}'.format(', '.join(columns)))
-    return df_filter[columns], cat_name_dict
+    logging.info('Filter by columns: {}'.format(', '.join(columns_out)))
+    return df_filter[columns_out], cat_name_dict
 
 
 def download_file_from_google_drive(id, destination):
@@ -226,3 +233,6 @@ def unzip_data(zip_file):
     with ZipFile(zip_file, 'r') as zipObj:
         zipObj.extractall()
     logging.info('Successfully unzip')
+
+    shutil.rmtree('__MACOSX',
+                  ignore_errors=True)

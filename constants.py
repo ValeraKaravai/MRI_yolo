@@ -30,7 +30,13 @@ COLUMNS = ['id', 'label', 'file', 'type_disk',
 COLUMNS_YOLO = ['label', 'x_center',
                 'y_center', 'width', 'height']
 
-COLORS = {'1': 'r', '2': 'b', '3': 'g'}
+COLORS = {'patalogical': 'r',
+          'suspicion': 'b',
+          'healthy': 'g'}
+
+TYPE_DISK = {'patologicheskij': 'patalogical',
+             'spodozreniem': 'suspicion',
+             'zdorovyj': 'healthy'}
 
 ## Logging config
 LOG_LEVEL = logging.INFO

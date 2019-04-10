@@ -21,10 +21,10 @@ def draw_polygon(x, color_patch):
                              height=x['height'],
                              width=x['width'],
                              linewidth=1,
-                             edgecolor=color_patch[str(x['label'])],
-                             facecolor='none',
-                             label=x['type_disk'])
-    return x['label'], rect
+                             edgecolor=color_patch[str(x['type_disk'])],
+                             facecolor='none')
+                             # label=x['type_disk'])
+    return x['label'], rect, x['type_disk']
 
 
 def draw_img(df, img_name, types_df, dir_img, color_patch, figsize):
@@ -49,6 +49,8 @@ def draw_img(df, img_name, types_df, dir_img, color_patch, figsize):
     fig, ax = plt.subplots(ncols=num_subplots,
                            figsize=figsize)
 
+    type_disk = set()
+
     if num_subplots == 1:
         ax = [ax]
     for i in range(num_subplots):
@@ -62,11 +64,18 @@ def draw_img(df, img_name, types_df, dir_img, color_patch, figsize):
                                axis=1)
         for j in rect:
             ax[i].add_patch(j[1])
+            type_disk.add(j[2])
 
         ax[i].set_title('{} {}'.format(types_df[i],
                                        img_name))
 
-        ax[i].legend(loc='upper left')
+    legend_patches = []
+    for i in type_disk:
+        legend_patches.append(patches.Patch(color=color_patch[str(i)],
+                                            label=i,
+                                            fill=False))
+
+    plt.legend(handles=legend_patches, loc='upper left')
 
     plt.show()
 
