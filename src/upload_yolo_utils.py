@@ -1,6 +1,6 @@
 import os
 import sys
-import random
+
 import logging
 import pandas as pd
 from shutil import copy
@@ -12,7 +12,6 @@ logging.basicConfig(format=const.LOG_FORMAT,
 
 
 def yolo_coord_file(df, dir_to, img_name, columns_yolo, img_size):
-
     img_txt = '{path}/{name}.txt'.format(path=dir_to,
                                          name=img_name.split('.')[0])
 
@@ -50,11 +49,7 @@ def img_txt(df, dir_to, columns_yolo, img_size, imgs):
     return
 
 
-def test_train_files(imgs, test_size, dir_to_file, dir_to):
-    random.seed(9001)
-    test_set = random.sample(list(imgs), test_size)
-    train_set = set(imgs) - set(test_set)
-
+def test_train_files(test_set, train_set, dir_to_file, dir_to):
     test_img = [dir_to_file + element for element in test_set]
     train_img = [dir_to_file + element for element in train_set]
 

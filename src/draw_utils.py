@@ -1,18 +1,31 @@
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
+
+import seaborn as sns
+import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+## Settings seaborn
 
-def draw_polygon(x, color_patch):
+rc = {"lines.linewidth": 2,
+      'lines.markersize': 7}
+sns.set_style(style="darkgrid",
+              rc=rc)
+sns.set_context("paper",
+                rc=rc,
+                font_scale=1.3)
 
+
+def draw_polygon(x, color_patch, linestyle):
     '''
 
     :param x: Series (row) in  DataFrame
     :type x: Series
     :param color_patch: match of class (label) and color
     :type color_patch: dict
+    :param linestyle: linestyle
+    :type linestyle: str
     :return: object of rectangle and label
 
     '''
@@ -20,14 +33,15 @@ def draw_polygon(x, color_patch):
     rect = patches.Rectangle((x['x'], x['y']),
                              height=x['height'],
                              width=x['width'],
-                             linewidth=1,
+                             linewidth=2,
+                             linestyle=linestyle,
                              edgecolor=color_patch[str(x['type_disk'])],
                              facecolor='none')
-                             # label=x['type_disk'])
     return x['label'], rect, x['type_disk']
 
 
-def draw_img(df, img_name, types_df, dir_img, color_patch, figsize):
+def draw_img(df, img_name, types_df, dir_img, color_patch, figsize,
+             numsubplots):
     '''
 
     :param df: list of data frame with MRI data
@@ -45,38 +59,70 @@ def draw_img(df, img_name, types_df, dir_img, color_patch, figsize):
     path_img = os.path.join(dir_img, img_name)
     img = Image.open(path_img)
     im_np = np.array(img, dtype=np.uint8)
-    num_subplots = len(df)
-    fig, ax = plt.subplots(ncols=num_subplots,
+    fig, ax = plt.subplots(ncols=numsubplots,
                            figsize=figsize)
 
     type_disk = set()
 
-    if num_subplots == 1:
+    if numsubplots == 1:
         ax = [ax]
-    for i in range(num_subplots):
-        ax[i].imshow(im_np)
-        
+
+    legend_patches = []
+    ax_i = 0
+    for i in range(len(df)):
+
+        ax[ax_i].imshow(im_np)
+
+        ax[ax_i].set_title('{} {}'.format(types_df[ax_i],
+                                          img_name))
+
         subset_df = df[i][df[i]['file'] == img_name]
         if subset_df.shape[0] == 0:
             continue
-        rect = subset_df.apply(draw_polygon, 
+
+        linestyle = '-' if types_df[i] == 'origin' else '--'
+        rect = subset_df.apply(draw_polygon,
                                color_patch=color_patch,
+                               linestyle=linestyle,
                                axis=1)
         for j in rect:
-            ax[i].add_patch(j[1])
+            ax[ax_i].add_patch(j[1])
             type_disk.add(j[2])
 
-        ax[i].set_title('{} {}'.format(types_df[i],
-                                       img_name))
+        for j in type_disk:
+            legend_patches.append(patches.Patch(color=color_patch[str(j)],
+                                                label=j + '_' + types_df[i],
+                                                linestyle=linestyle,
+                                                fill=False))
+        if numsubplots > 1:
 
-    legend_patches = []
-    for i in type_disk:
-        legend_patches.append(patches.Patch(color=color_patch[str(i)],
-                                            label=i,
-                                            fill=False))
+            ax[ax_i].legend(handles=legend_patches,
+                            ncol=1,
+                            loc='upper left')
+            ax_i += 1
+            legend_patches = []
 
-    plt.legend(handles=legend_patches, loc='upper left')
+        elif len(df) == (i + 1):
+            ax[ax_i].legend(handles=legend_patches,
+                            ncol=len(df),
+                            loc='upper left')
 
     plt.show()
 
     return
+
+
+def draw_metrics(x, y, hue, data, figsize, title):
+    n_colors = len(data[hue].unique())
+    palette = sns.color_palette("Set1",
+                                n_colors=n_colors,
+                                desat=.5)
+
+    plt.figure(figsize=figsize)
+    plt.title(title)
+    sns.lineplot(x=x,
+                 y=y,
+                 data=data,
+                 hue=hue,
+                 marker='o',
+                 palette=palette)

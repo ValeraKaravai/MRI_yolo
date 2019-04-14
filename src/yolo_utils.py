@@ -1,6 +1,5 @@
 import random
 from ctypes import *
-import logging
 import pandas as pd
 
 
@@ -118,16 +117,7 @@ predict_image.argtypes = [c_void_p, IMAGE]
 predict_image.restype = POINTER(c_float)
 
 
-def classify(net, meta, im):
-    out = predict_image(net, im)
-    res = []
-    for i in range(meta.classes):
-        res.append((meta.names[i], out[i]))
-    res = sorted(res, key=lambda x: -x[1])
-    return res
-
-
-def detect(net, meta, image, thresh=.1, hier_thresh=.5, nms=.45):
+def detect(net, meta, image, thresh=.2, hier_thresh=.5, nms=.45):
     im = load_image(image, 0, 0)
     num = c_int(0)
     pnum = pointer(num)
@@ -151,15 +141,14 @@ def detect(net, meta, image, thresh=.1, hier_thresh=.5, nms=.45):
 
 
 def detect_df(net, meta, img, columns, cat_label, threshold=.2):
-    detect_list = yolo_utils.detect(net=net,
+    detect_list = detect(net=net,
                          meta=meta,
                          image=('data/obj/' + img).encode('ascii'),
                          thresh=threshold)
     results = pd.DataFrame(detect_list)
     if results.shape[0] == 0:
         return pd.DataFrame(columns=columns)
-    
-    results = results.drop(1, axis=1)
+
     results.columns = columns
     results['x'] = results['x_center'] - results['width'] / 2
     results['y'] = results['y_center'] - results['height'] / 2
@@ -167,29 +156,3 @@ def detect_df(net, meta, img, columns, cat_label, threshold=.2):
     results['type_disk'] = results['label'].map(cat_label)
     results['file'] = img
     return results
-
-
-def load_data(cfg, weights, data):
-    '''
-
-    :param cfg: configuration of network
-    :type cfg: str
-    :param weights: weight of network
-    :type weights: str
-    :param data: data of yolo form for data
-    :type data: str
-    :return: net and meta data (format for yola detection )
-
-    '''
-
-    logging.info('Encode to ascii')
-    cfg = cfg.encode('ascii')
-    weights = weights.encode('ascii')
-    data = data.encode('ascii')
-
-    logging.info('Load net {} {}'.format(cfg, weights))
-    net = load_net(cfg, weights, 0)
-
-    logging.info('Load meta {}'.format(data))
-    meta = load_meta(data)
-    return net, meta

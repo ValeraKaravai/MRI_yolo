@@ -1,10 +1,11 @@
 import os
 import sys
+import shutil
+import random
 import logging
 import requests
 import xmltodict
 import pandas as pd
-import shutil
 from tqdm import tqdm
 from zipfile import ZipFile
 
@@ -77,6 +78,10 @@ def parse_xml(df):
     '''
 
     logging.info('Start preprocessing data, shape = {}'.format(df.shape))
+
+    logging.info('Clean data (visualize disk)')
+    df = df[df['На срезе визуализируются межпозвоночные диски'] == 'Визуализируются (можно размечать)']
+
     logging.info('Drop NaN columns of XML')
     df = df.dropna(subset=['XML'])
 
@@ -105,12 +110,12 @@ def parse_xml(df):
     df_parse = pd.concat(list_df_parse,
                          ignore_index=True,
                          sort=False)
+    df_clean = df_parse.drop(['polygon'], axis=1)
 
-    return df_parse.drop(['polygon'], axis=1)
+    return df_clean
 
 
 def parse_type_disk(type_disk_mri):
-
     '''
 
     :param type_disk_mri: raw string with type of disk (mri)
@@ -123,34 +128,7 @@ def parse_type_disk(type_disk_mri):
     return str_type_disk.iloc[:, 0] + str_type_disk.iloc[:, 1]
 
 
-def cat_label(str_label):
-    '''
-
-    :param str_label: label (type disk)
-    :type str_label: Series
-    :return: Series with category of type disk (zdarov/patalogiya/podozreniye)
-    '''
-
-    cat_name = str_label.astype("category").cat.categories
-    cat_name_dict = dict(enumerate(cat_name))
-
-    return str_label.astype("category").cat.codes, \
-           cat_name_dict
-
-
-def preproc_data(df, columns_out, type_disk):
-    '''
-
-    :param df: data frame for preprocessing (filter of data)
-    :type df: DataFrame
-    :param columns_out: columns in output df
-    :type columns_out: list
-    :param type_disk: Dictionary with rename category of disk
-    :type type_disk: dict
-    :return: data frame with categorical variable (label) and without uninformation columns
-
-    '''
-
+def preproc_data(df, columns_out, type_disk, cat_type_disk, path_clean_data):
     logging.info('Adding column type_mri')
     df['type_mri'] = df.name.str.split('-', expand=True).iloc[:, 0]
 
@@ -168,17 +146,86 @@ def preproc_data(df, columns_out, type_disk):
     df_filter['type_disk'] = df_filter['type_disk'].map(type_disk)
 
     logging.info('Adding column label (category)')
-    df_filter['label'], cat_name_dict = cat_label(str_label=df_filter.type_disk)
+    df_filter['label'] = df_filter['type_disk'].map(cat_type_disk)
 
     df_filter['label'] = df_filter['label'].astype(object)
 
     logging.info('Filtering data, shape before = {}'.format(df_filter.shape))
-    logging.info('Category {}'.format(cat_name_dict))
+
+    cat_type_disk_int = {v: k for k, v in cat_type_disk.items()}
+    logging.info('Category {}'.format(cat_type_disk))
     logging.info('Filter by columns: {}'.format(', '.join(columns_out)))
-    return df_filter[columns_out], cat_name_dict
+
+    df_clean = df_filter[columns_out]
+
+    logging.info('Save clean data to {}, shape = {}'.format(path_clean_data,
+                                                            df_clean.shape))
+    df_clean.to_csv(path_clean_data,
+                    index=False)
+
+    return df_clean, cat_type_disk_int
+
+
+def main_preprocessing(df, columns_out, type_disk,
+                       cat_type_disk,
+                       path_clean_data, is_split,
+                       path_test_data=None):
+    '''
+
+    :param df: data frame for preprocessing (filter of data)
+    :type df: DataFrame
+    :param columns_out: columns in output df
+    :type columns_out: list
+    :param type_disk: Dictionary with rename category of disk
+    :type type_disk: dict
+    :param cat_type_disk
+    :param path_clean_data: Path for saving clean data
+    :param is_split: bool - split of test and train set or no
+    :param path_test_data: path for saving test set
+    :return: data frame with categorical variable (label) and without uninformation columns
+
+    '''
+
+    logging.info('Start parse XML column')
+    df_parse = parse_xml(df=df)
+    df_clean, type_int = preproc_data(df=df_parse,
+                                      columns_out=columns_out,
+                                      type_disk=type_disk,
+                                      cat_type_disk=cat_type_disk,
+                                      path_clean_data=path_clean_data)
+
+    imgs = {'main': df_clean['file'].unique()}
+    cnt_img = len(imgs['main'])
+    cnt_test = int(0.3 * cnt_img)
+    if is_split:
+        logging.info('Start split test/train set, size = {}'.format(cnt_test))
+        test_set, train_set = test_train_split(imgs=imgs['main'],
+                                               test_size=cnt_test)
+        logging.info('Save test set to = {}'.format(path_clean_data))
+        df_clean[df_clean['file'].isin(test_set)].to_csv(path_test_data,
+                                                         index=False)
+
+        imgs.update({'test': test_set})
+        imgs.update({'train': train_set})
+
+    return df_clean, imgs
+
+
+def test_train_split(imgs, test_size):
+    test_set = random.sample(list(imgs), test_size)
+    train_set = set(imgs) - set(test_set)
+
+    return test_set, train_set
 
 
 def download_file_from_google_drive(id, destination):
+    '''
+
+    :param id: id of file from google drive (data zip)
+    :param destination: path for download
+    :return: None
+
+    '''
 
     url = "https://docs.google.com/uc?export=download"
 
@@ -193,9 +240,10 @@ def download_file_from_google_drive(id, destination):
     logging.info('response = {}'.format(response))
     save_response_content(response, destination)
 
+    return
+
 
 def get_confirm_token(response):
-
     for key, value in response.cookies.items():
         if key.startswith('download_warning'):
             return value
@@ -204,7 +252,6 @@ def get_confirm_token(response):
 
 
 def save_response_content(response, destination):
-
     chunk_size = 32768
 
     total_size = int(response.headers.get('content-length', 0))
@@ -217,11 +264,9 @@ def save_response_content(response, destination):
                 if chunk:
                     pbar.update(chunk_size)
                     f.write(chunk)
-    # logging.info('Successfully downloaded')
 
 
 def unzip_data(zip_file):
-
     '''
 
     :param zip_file: name of zip file from google drive
