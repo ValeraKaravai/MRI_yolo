@@ -1,0 +1,15 @@
+# History files
+.idea/
+__pycache__/
+.ipynb_checkpoints/
+
+# Files
+*.zip
+darknet/
+data/
+
+
+# DS_Store
+.DS_Store
+
+
