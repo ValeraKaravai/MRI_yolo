@@ -17,12 +17,12 @@ Data preprocessing, visualization and result in [Jupyter report](report.ipynb)
 		<object-class> <x_center> <y_center> <width> <height>
 		```
 	* More information: [Darknet README](https://github.com/AlexeyAB/darknet#how-to-train-to-detect-your-custom-objects)
-* **[draw_utils](src/draw_utils.py)** functions for drawing images with box
-* **[yolo_utils](src/yolo_utils.py)** load libdarknet (C-library) and detection functions
-* **[YoloModels](src/yolo_model.py)** class of prediction for each model class and calculation of metrics
-* **[YoloPredict](src/yolo.py)** class of prediction for one model
-* **[YoloMetricsImgs](src/yolo_metrics_imgs.py)** class of calculation prediction for all images
-* **[YoloMetricsImg](src/yolo_metrics_img.py)** class of calculation prediction for one image
+* **[draw_utils](src/draw_utils.py):** functions for drawing images with box
+* **[yolo_utils](src/yolo_utils.py):** load libdarknet (C-library) and detection functions
+* **[YoloModels](src/yolo_models.py):** class of prediction for each model class and calculation of metrics
+* **[YoloPredict](src/yolo.py):** class of prediction for one model
+* **[YoloMetricsImgs](src/yolo_metrics_imgs.py):** class of calculation prediction for all images
+* **[YoloMetricsImg](src/yolo_metrics_img.py):** class of calculation prediction for one image
 
 
 ## 2. Train
